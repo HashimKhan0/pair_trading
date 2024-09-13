@@ -8,29 +8,33 @@ warnings.filterwarnings('ignore')
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.regression.linear_model import OLS
 
-def fetch_data(ticker1, ticker2, startdate, enddate):
-    data = yf.download([ticker1, ticker2], start = startdate, end = enddate)['Adj Close']
+
+tickers = ['AAPL', 'MSFT', 'TSLA', 'JNJ', 'V', 'AMZN', 'WMT', 'KO', 'PFE', 'NFLX']
+
+cointegrated_pairs = []
+
+def fetch_data(tickers, startdate, enddate):
+    data = yf.download(tickers, start = startdate, end = enddate)['Adj Close']
     data = data.dropna()
 
     return data
 
-def plot_data(data,ticker1,ticker2):
-    data[ticker1].plot(figsize = (10, 5), label = ticker1, color = 'blue')
-    data[ticker2].plot(figsize = (10, 5), label = ticker2, color = 'red')
-    plt.title(f"Adjust closing price of {ticker1} $ {ticker2}")
-    plt.legend()
-    plt.show()
 
 
+def engle_granger_two_step_coint_test(stock1, stock2):
 
-def engle_granger_two_step_coint_test(data):
+
     
-    result = OLS(data[ticker1], data[ticker2])
+    result = OLS(stock1, stock2).fit()
     residuals = result.residuals
-    
     adf = adfuller(residuals)
 
+
+
     print(f"---regression result---\n\nr-value: {result.rvalue}\np-value: {result.pvalue}\n\n ---Augmented Dickey Fuller test result---\n\n test stat: {adf[0]}\n critical value: {adf[4]['5%']}")
+
+    return adf[2]
+
 
 
 def create_spread(data):
@@ -63,7 +67,8 @@ if __name__ == '__main__':
     enddate = input("Enter the end date(YYYY-MM-DD): ")
 
     data = fetch_data(ticker1, ticker2, startdate, enddate)
-    
+
+
     engle_granger_two_step_coint_test(data)
 
     create_spread(data)
