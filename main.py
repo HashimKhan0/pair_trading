@@ -17,7 +17,7 @@ def fetch_data(ticker1, ticker2, startdate, enddate):
 def plot_data(data,ticker1,ticker2):
     data[ticker1].plot(figsize = (10, 5), label = ticker1, color = 'blue')
     data[ticker2].plot(figsize = (10, 5), label = ticker2, color = 'red')
-    plt.title(f"Adjust closing price of {ticker1} $ {ticker2}")
+    plt.title(f"Adjust closing price of {ticker1} & {ticker2}")
     plt.legend()
     plt.show()
 
@@ -25,12 +25,12 @@ def plot_data(data,ticker1,ticker2):
 
 def engle_granger_two_step_coint_test(data):
     
-    result = OLS(data[ticker1], data[ticker2])
-    residuals = result.residuals
+    result = OLS(data[ticker1], data[ticker2]).fit()
+    residuals = result.resid
     
     adf = adfuller(residuals)
 
-    print(f"---regression result---\n\nr-value: {result.rvalue}\np-value: {result.pvalue}\n\n ---Augmented Dickey Fuller test result---\n\n test stat: {adf[0]}\n critical value: {adf[4]['5%']}")
+    print(f"---Augmented Dickey Fuller test result---\n\n test stat: {adf[0]}\n critical value: {adf[4]['5%']}")
 
 
 def create_spread(data):
@@ -69,10 +69,3 @@ if __name__ == '__main__':
     create_spread(data)
 
     plot_spread(data, ticker1, ticker2)
-
-    print(data.residuals)
-    
-
-
-
-

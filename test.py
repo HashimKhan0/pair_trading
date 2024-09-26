@@ -31,7 +31,7 @@ def engle_granger_two_step_coint_test(stock1, stock2):
 
 
 
-    print(f"---regression result---\n\nr-value: {result.rvalue}\np-value: {result.pvalue}\n\n ---Augmented Dickey Fuller test result---\n\n test stat: {adf[0]}\n critical value: {adf[4]['5%']}")
+    print(f"---Augmented Dickey Fuller test result---\n\n critical value: {adf[4]['5%']}")
 
     return adf[2]
 
@@ -73,9 +73,8 @@ if __name__ == '__main__':
 
     create_spread(data)
 
-    plot_spread(data, ticker1, ticker2)
 
-    print(data.residuals)
+
     
 
 
