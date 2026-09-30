@@ -1,87 +1,57 @@
-# Goals
+# Pairs Trading: Cointegration & Granger Causality
 
-the purpose of this repo is to explore the mathematics and ideas behind pair trading in python.
+Exploring the statistics behind **pairs trading** in Python: finding stock pairs whose prices move together over the long run, testing whether their spread is mean-reverting, and turning that spread into entry/exit signals.
 
-specifically we explore statistical tests that give insights into the relationships found in time series data.
+## Goals
 
-the goals are but not limited to...
-1. Gain experience working with time series data. (graphing, data-cleaning, mathematics with dataframes etc)
-2. Apply the Granger Causality Test and understand and interpret the underlying math as well as the output
-3. Test for Cointegration using the Augmented Dickey-Fuller Test and understand it to the same degree as the Granger Causality Test
-4. Apply the above tests to different data points to explore the different variables at play
-5. What next steps are possible given this new SUPREME POWER!!
+1. Get hands-on with financial time series: downloading, cleaning, plotting and doing math on price DataFrames.
+2. Apply the **Granger causality test** and interpret both the math and the output.
+3. Test for **cointegration** with the Engle–Granger two-step method (OLS + Augmented Dickey–Fuller on the residuals).
+4. Screen many tickers for cointegrated pairs.
+5. Turn a cointegrated pair into a mean-reversion trading rule.
 
-# Key Def
+## Method
 
-## Lag
-- in our case lag is the number of previous observations used to predict the current value
+**1. Granger causality.** For every ticker pair, test whether lags of one series help predict the other and keep the minimum p-value across lags (H₀: *X does not Granger-cause Y*). This captures short-term predictive relationships but is unreliable on non-stationary series — hence step 2.
 
-## Stationary Time Series
-- a stationary time series implies two things: 
+**2. Cointegration (Engle–Granger).** Regress one price on the other and run an ADF test on the residuals (H₀: unit root / non-stationary). Stationary residuals imply the pair is cointegrated. NFLX and META are cointegrated in the sample studied.
 
-1. Mean Reversion: The difference between the two stock prices tends to revert to a stable mean. If the spread deviates from this mean, it is likely to move back toward it over time.
+**3. The spread.**
 
-2. Constant Variability: The variability in the delta remains consistent over time, indicating no increasing or decreasing trend in the spread's volatility.
+$$\text{Spread}_t = \text{META}_t - \beta \cdot \text{NFLX}_t$$
 
+where β, the hedge ratio, is estimated by regressing META on NFLX. The spread is checked for stationarity (mean reversion + constant variance).
 
-# Granger Causality Test
+**4. Signals.**
 
-- In our code we create a matrix that tests the Granger Causality for all combinations i.e NTFLX and META 
-- the arguemnts are self explantory but test specifies which statistical test to use
-- For each combination of possible causality the function tests whether the lags of one variable Granger cause-the other
-- It returns the minimum p-value from the lags and can be compared to significane level to reject the null hypthosis that **X does not Granger-Cause Y**
-- In summary the test focuses on the short term predictive relationships however it does not account for long-term relationships
-- Be wary that the test is misleading for time series pairs that are not stationary
-- This is where the Engle Granger Test comes in hand 
+| Condition | Action |
+|---|---|
+| Spread < mean − 2σ | **Long the spread**: buy META, sell NFLX |
+| Spread > mean + 2σ | **Short the spread**: sell META, buy NFLX |
+| Spread returns to within 1σ of the mean | Close the position |
 
+## Repository layout
 
-# Cointegration Test(Engle Granger OR Johansen tests)
+```
+cointegration.ipynb   # Granger-causality matrix, Engle–Granger test, spread analysis (NFLX / META)
+S&P_500.ipynb         # extending the search to S&P 500 constituents
+main.py               # two-ticker pipeline: fetch, plot, cointegration test, spread
+test.py               # screen a basket (AAPL, MSFT, TSLA, JNJ, V, AMZN, WMT, KO, PFE, NFLX) for cointegrated pairs
+```
 
-- we first check the residuals for cointegration after fitting the variables to a linear relationship
+## Running it
 
-- the Augmented Dickey-Fueller test is related to the Cointegration test 
+```bash
+pip install pandas numpy yfinance matplotlib statsmodels
+python main.py
+```
 
-- the Engle Granger test uses the ADF test to check if the residulas are stationary and if so then we arrive at the conclusion that the stocks are cointegrated
+## Key definitions
 
+- **Lag:** number of past observations used to predict the current value.
+- **Stationarity:** constant mean and variance over time; for a spread, this means deviations tend to revert.
+- **ADF test:** tests for a unit root; lag length can be chosen by AIC/BIC. If a series is non-stationary, differencing is the usual fix.
 
+## Tech stack
 
-
-## Augmented Dickey-Fuller Test
-- a statistical test in time series analysis to determine whether a given time seires is stationary or contains a unit root(implies non-stationary)
-
-- Our null hypthosis is that the time series is non-stationary
-- the test calculates a test statistic based on the lagged differences of the time series
-- we compare the test statistic to critical values derived from the Dickey-Fuller distribution
-- there are common criteria that determine the number of lags like
-    - Akaike Information Criterion
-    - Bayesian Information Criterion
-- if the ADF suggests non-stationarity we may need to subtract the previous observation from the current one
-
-
-# Next Steps
-
-- Now that we understand that NFLX and META are cointegrated we can analyze the spread(NFLX - META)
-- using the ADF test we check for the stationarity of the spread and take the implications of the result and look to profit 
-
-- in our code we check the stationarity of the spread(NFLX - META) and conclude it is stationary 
-- combining mean reversion and constant variability we can create a pairs strategy 
-
-# Pairs Trading 
-- there are 3 steps we must follow to develop a strategy
-1. Define the Trading Spread
-    - This involves defining a function of time 
-    - Spread(t) = META(t) - B * NFLX(t)
-    - where B is the hedge ratio typcially estimate by regressing METa on NFLX
-2. Identify the Mean of the Spread
-    - calculate the mean of the spread using historical data
-    - this serves as the benchmark for determining when the spread has deviated significantly and is likely to revert
-
-3. Establish Entry and Exit Signals
-    - Entry Points:
-        - **Long Spread(Buy META, Sell NFLX)**: enter a long position when the spread deviates below a threshold(i.e mean -2 sd)
-        - **Short Spread(Sell META, Buy NFLX)**: enter a short position when the spread deviates above a threshold(i.e mean +2 sd)
-    - Exit Points:
-        - close the position when the spread reverts to the mean
-        - or crosses a predefined level
-        - i.e within 1 standard deviation of the mean
-        
+Python · pandas · NumPy · statsmodels · yfinance · matplotlib
